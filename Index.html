@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Food Delivery App - Prototype Pattern</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-orange-50">
+
+  <!-- Navbar -->
+  <nav class="flex justify-between p-4 bg-orange-500 text-white">
+    <h1 class="font-bold">FoodieApp</h1>
+    <div class="flex gap-4">
+      <button onclick="showPage('menu')">Menu</button>
+      <button onclick="showPage('cart')">Cart (<span id="cartCount">0</span>)</button>
+    </div>
+  </nav>
+
+  <!-- Login Page -->
+  <div id="loginPage" class="flex items-center justify-center h-screen">
+    <div class="bg-white p-6 rounded-xl shadow-lg w-80">
+      <h2 class="text-xl font-bold mb-4">Login</h2>
+      <input id="username" class="border w-full p-2 mb-4 rounded-lg" placeholder="Enter username" />
+      <button onclick="login()" class="w-full bg-orange-500 text-white py-2 rounded-lg">Login</button>
+    </div>
+  </div>
+
+  <!-- Menu Page -->
+  <div id="menuPage" class="hidden p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+    <!-- Menu Items will be injected -->
+  </div>
+
+  <!-- Cart Page -->
+  <div id="cartPage" class="hidden p-6">
+    <h2 class="text-xl font-bold mb-4">Your Cart</h2>
+    <div id="cartItems"></div>
+    <div class="mt-6 flex gap-4">
+      <button onclick="placeOrder()" class="bg-green-600 text-white px-3 py-1 rounded-lg">Place Order</button>
+      <button onclick="repeatOrder()" class="bg-blue-600 text-white px-3 py-1 rounded-lg">Repeat Last Order</button>
+    </div>
+  </div>
+
+  <script>
+    // -------- Prototype Registry --------
+    class PrototypeRegistry {
+      constructor() { this.store = new Map(); }
+      register(key, proto) { this.store.set(key, proto); }
+      create(key, overrides = {}) {
+        const proto = this.store.get(key);
+        if (!proto) throw new Error("Prototype not found: " + key);
+        const copy = JSON.parse(JSON.stringify(proto)); // deep clone
+        return { ...copy, ...overrides };
+      }
+    }
+
+    const registry = new PrototypeRegistry();
+
+    // -------- Prototypes --------
+    registry.register("burger", { id: "menu-1", name: "Cheese Burger", price: 149, tags: ["veg"] });
+    registry.register("pizza", { id: "menu-2", name: "Margherita Pizza", price: 249, tags: ["veg"] });
+    registry.register("biryani", { id: "menu-3", name: "Chicken Biryani", price: 299, tags: ["non-veg"] });
+
+    registry.register("order_template", {
+      id: "order-template",
+      customerId: "TEMPLATE",
+      items: [],
+      address: "TEMPLATE_ADDR",
+      status: "pending",
+    });
+
+    // -------- State --------
+    let currentUser = null;
+    let cart = [];
+    let lastOrder = null;
+
+    // -------- UI Navigation --------
+    function showPage(page) {
+      document.getElementById("loginPage").classList.add("hidden");
+      document.getElementById("menuPage").classList.add("hidden");
+      document.getElementById("cartPage").classList.add("hidden");
+
+      if (page === "menu") document.getElementById("menuPage").classList.remove("hidden");
+      if (page === "cart") document.getElementById("cartPage").classList.remove("hidden");
+      if (page === "login") document.getElementById("loginPage").classList.remove("hidden");
+
+      if (page === "cart") renderCart();
+    }
+
+    function login() {
+      const name = document.getElementById("username").value;
+      if (!name) { alert("Enter a username"); return; }
+      currentUser = name;
+      renderMenu();
+      showPage("menu");
+    }
+
+    // -------- Render Menu --------
+    function renderMenu() {
+      const menuPage = document.getElementById("menuPage");
+      menuPage.innerHTML = "";
+
+      ["burger", "pizza", "biryani"].forEach((key) => {
+        const item = registry.create(key);
+        const card = document.createElement("div");
+        card.className = "border rounded-xl shadow-md p-4 flex flex-col";
+
+        card.innerHTML = `
+          <h2 class="text-lg font-bold">${item.name}</h2>
+          <p class="text-gray-600">₹${item.price}</p>
+          <button class="mt-auto bg-orange-500 text-white px-3 py-1 rounded-lg">Add to Cart</button>
+        `;
+        card.querySelector("button").onclick = () => addToCart(item);
+        menuPage.appendChild(card);
+      });
+    }
+
+    // -------- Cart Logic --------
+    function addToCart(item) {
+      cart.push(item);
+      document.getElementById("cartCount").innerText = cart.length;
+    }
+
+    function renderCart() {
+      const cartDiv = document.getElementById("cartItems");
+      cartDiv.innerHTML = "";
+      if (cart.length === 0) {
+        cartDiv.innerHTML = "<p>No items in cart</p>";
+      } else {
+        cart.forEach((item, idx) => {
+          const p = document.createElement("p");
+          p.textContent = `${idx + 1}. ${item.name} — ₹${item.price}`;
+          cartDiv.appendChild(p);
+        });
+      }
+    }
+
+    function placeOrder() {
+      if (cart.length === 0) { alert("Cart is empty!"); return; }
+      const order = registry.create("order_template", {
+        id: "ord-" + Date.now(),
+        customerId: currentUser,
+        items: [...cart],
+        address: "Bangalore MG Road",
+        status: "confirmed",
+      });
+      lastOrder = order;
+      cart = [];
+      document.getElementById("cartCount").innerText = "0";
+      renderCart();
+      alert("Order placed successfully!");
+    }
+
+    function repeatOrder() {
+      if (!lastOrder) { alert("No last order to repeat!"); return; }
+      const clone = registry.create("order_template", {
+        ...lastOrder,
+        id: "ord-" + Date.now(),
+        status: "confirmed",
+      });
+      alert("Repeated order with " + clone.items.length + " items.");
+    }
+
+    // Start at login
+    showPage("login");
+  </script>
+</body>
+</html>
