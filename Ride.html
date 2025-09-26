@@ -1,36 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Ride-Hailing App - Prototype Demo</title>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-  <style>
-    * { box-sizing: border-box; margin:0; padding:0; }
-    body { font-family: 'Roboto', sans-serif; background:#f5f5f5; }
-    header { background:#007bff; color:#fff; padding:15px; text-align:center; font-size:26px; font-weight:bold; }
-    nav { background:#333; padding:10px; text-align:center; }
-    nav button { margin:0 8px; padding:8px 14px; color:#fff; background:#007bff; border:none; border-radius:5px; cursor:pointer; font-weight:bold; }
-    nav button:hover { background:#0056b3; }
-    .page { display:none; padding:20px; }
-    .card { background:#fff; padding:25px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.1); max-width:650px; margin:20px auto; }
-    input, select { width:95%; padding:10px; margin:10px 0; border-radius:6px; border:1px solid #ddd; font-size:16px; }
-    button.action { background:#007bff; color:#fff; border:none; padding:10px 16px; border-radius:6px; cursor:pointer; font-size:16px; margin-top:5px; }
-    button.action:hover { background:#0056b3; }
-    .ride-list { display:flex; flex-wrap:wrap; justify-content:center; gap:20px; margin-top:20px; }
-    .ride-item { background:#fff; border-radius:12px; padding:15px; width:200px; box-shadow:0 3px 8px rgba(0,0,0,0.08); text-align:center; transition: transform 0.2s; }
-    .ride-item:hover { transform: translateY(-5px); box-shadow:0 6px 15px rgba(0,0,0,0.15); }
-    .ride-item h3 { margin:10px 0 6px; font-size:20px; color:#007bff; }
-    .ride-item p { font-size:14px; margin:6px 0; }
-    .cart-item { border-bottom:1px solid #eee; padding:12px 0; font-size:16px; display:flex; justify-content:space-between; }
-    .cart-total { margin-top:15px; font-weight:bold; font-size:18px; text-align:right; }
-    .cart-buttons { display:flex; gap:10px; justify-content:flex-end; margin-top:15px; }
-    .cart-buttons button { flex:1; }
-    @media(max-width:600px){ .ride-list{flex-direction:column; align-items:center;} }
-  </style>
+<meta charset="UTF-8">
+<title>Ride-Hailing App - Full Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing:border-box; margin:0; padding:0;}
+body { font-family:'Roboto',sans-serif; background:#f5f5f5;}
+header { background:#007bff; color:#fff; padding:15px; text-align:center; font-size:26px; font-weight:bold;}
+nav { background:#333; padding:10px; text-align:center;}
+nav button { margin:0 8px; padding:8px 14px; color:#fff; background:#007bff; border:none; border-radius:5px; cursor:pointer; font-weight:bold;}
+nav button:hover { background:#0056b3;}
+.page { display:none; padding:20px; }
+.card { background:#fff; padding:25px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.1); max-width:700px; margin:20px auto;}
+input, select { width:95%; padding:10px; margin:10px 0; border-radius:6px; border:1px solid #ddd; font-size:16px;}
+button.action { background:#007bff; color:#fff; border:none; padding:10px 16px; border-radius:6px; cursor:pointer; font-size:16px; margin-top:5px;}
+button.action:hover { background:#0056b3; }
+.ride-list { display:flex; flex-wrap:wrap; justify-content:center; gap:20px; margin-top:20px; }
+.ride-item { background:#fff; border-radius:12px; padding:15px; width:220px; box-shadow:0 3px 8px rgba(0,0,0,0.08); text-align:center; transition: transform 0.2s; }
+.ride-item:hover { transform: translateY(-5px); box-shadow:0 6px 15px rgba(0,0,0,0.15); }
+.ride-item img { width:180px; height:100px; object-fit:cover; border-radius:8px; margin-bottom:8px;}
+.ride-item h3 { margin:6px 0; font-size:20px; color:#007bff; }
+.ride-item p { font-size:14px; margin:4px 0; }
+.cart-item { border-bottom:1px solid #eee; padding:12px 0; font-size:16px; display:flex; justify-content:space-between; }
+.cart-total { margin-top:15px; font-weight:bold; font-size:18px; text-align:right; }
+.cart-buttons { display:flex; gap:10px; justify-content:flex-end; margin-top:15px; }
+.cart-buttons button { flex:1; }
+@media(max-width:600px){ .ride-list{flex-direction:column; align-items:center;} .ride-item img{width:100%;}}
+#map { height:250px; width:100%; margin-top:10px; border-radius:12px; }
+</style>
 </head>
 <body>
 
-<header>Ride-Hailing App Prototype</header>
+<header>Ride-Hailing App - Full Demo</header>
 
 <nav>
   <button onclick="showPage('registerPage')">Register</button>
@@ -55,7 +57,8 @@
 <div id="ridePage" class="page">
   <div class="card">
     <h2>Available Rides</h2>
-    <div class="ride-list" id="rideList"></div>
+    <div id="rideList" class="ride-list"></div>
+    <div id="map"></div>
   </div>
 </div>
 
@@ -73,36 +76,31 @@
 </div>
 
 <script>
-  // -------- Prototype Pattern Classes --------
+  // ---------- Prototype Classes ----------
   class Ride {
-    constructor(type,fare,ac,seats){ this.type=type; this.fare=fare; this.ac=ac; this.seats=seats; this.pickup=""; this.drop=""; this.distance=0;}
-    clone(){ return new Ride(this.type,this.fare,this.ac,this.seats);}
+    constructor(type,fare,ac,seats,img){ this.type=type; this.fare=fare; this.ac=ac; this.seats=seats; this.pickup=""; this.drop=""; this.distance=0; this.img=img;}
+    clone(){ return new Ride(this.type,this.fare,this.ac,this.seats,this.img);}
   }
 
   class RideOrder {
-    constructor(customer,rides){
-      this.customer=customer;
-      this.rides=rides.map(r=>r.clone());
-      this.id="ride-"+Date.now();
-    }
+    constructor(customer,rides){ this.customer=customer; this.rides=rides.map(r=>r.clone()); this.id="ride-"+Date.now(); }
     clone(){ return new RideOrder(this.customer,this.rides);}
   }
 
-  // -------- State --------
-  const ridePrototype = new Ride("Standard",100,true,4);
+  // ---------- State ----------
   const rides = [
-    (()=>{let r=ridePrototype.clone(); r.type="Mini"; r.fare=100; r.ac=true; r.seats=3; return r;})(),
-    (()=>{let r=ridePrototype.clone(); r.type="Sedan"; r.fare=200; r.ac=true; r.seats=4; return r;})(),
-    (()=>{let r=ridePrototype.clone(); r.type="SUV"; r.fare=350; r.ac=true; r.seats=6; return r;})(),
-    (()=>{let r=ridePrototype.clone(); r.type="Luxury"; r.fare=500; r.ac=true; r.seats=4; return r;})()
+    new Ride("Mini",100,true,3,"https://i.imgur.com/XjYd1ej.jpg"),
+    new Ride("Sedan",200,true,4,"https://i.imgur.com/4tV7Ez7.jpg"),
+    new Ride("SUV",350,true,6,"https://i.imgur.com/FzHz4SV.jpg"),
+    new Ride("Luxury",500,true,4,"https://i.imgur.com/ODHzT9O.jpg")
   ];
 
-  let cart = JSON.parse(localStorage.getItem("cart")) || [];
-  let lastRide = JSON.parse(localStorage.getItem("lastRide")) || null;
-  let users = JSON.parse(localStorage.getItem("users")) || [{username:"admin", password:"1234"}];
+  let cart = JSON.parse(localStorage.getItem("cart"))||[];
+  let lastRide = JSON.parse(localStorage.getItem("lastRide"))||null;
+  let users = JSON.parse(localStorage.getItem("users"))||[{username:"admin",password:"1234"}];
   let currentUser = null;
 
-  // -------- Page Switch --------
+  // ---------- Page Switch ----------
   function showPage(pageId){
     document.querySelectorAll(".page").forEach(p=>p.style.display="none");
     document.getElementById(pageId).style.display="block";
@@ -110,7 +108,7 @@
     if(pageId==="cartPage") renderCart();
   }
 
-  // -------- User Registration --------
+  // ---------- Register ----------
   function registerUser(e){
     e.preventDefault();
     const uname=document.getElementById("username").value;
@@ -122,42 +120,45 @@
     showPage('ridePage');
   }
 
-  // -------- Render Rides --------
+  // ---------- Render Rides ----------
   function renderRides(){
-    const rideListDiv = document.getElementById("rideList");
+    const rideListDiv=document.getElementById("rideList");
     rideListDiv.innerHTML="";
     rides.forEach(r=>{
       let div=document.createElement("div");
       div.className="ride-item";
-      div.innerHTML=`<h3>${r.type}</h3>
-      <p>Fare: ₹${r.fare}</p>
-      <p>Seats: ${r.seats}, AC: ${r.ac?'Yes':'No'}</p>
-      <input type="text" placeholder="Pickup location" id="pickup-${r.type}">
-      <input type="text" placeholder="Drop location" id="drop-${r.type}">
-      <input type="number" placeholder="Distance (km)" id="dist-${r.type}" min="1">
-      <button class="action" onclick='addToCart("${r.type}")'>Book Ride</button>`;
+      div.innerHTML=`<img src="${r.img}" alt="${r.type}">
+        <h3>${r.type}</h3>
+        <p>Fare: ₹${r.fare}/km</p>
+        <p>Seats: ${r.seats}, AC: ${r.ac?'Yes':'No'}</p>
+        <input type="text" placeholder="Pickup location" id="pickup-${r.type}">
+        <input type="text" placeholder="Drop location" id="drop-${r.type}">
+        <input type="number" placeholder="Distance (km)" id="dist-${r.type}" min="1">
+        <button class="action" onclick='addToCart("${r.type}")'>Book Ride</button>`;
       rideListDiv.appendChild(div);
     });
+    initMap();
   }
 
+  // ---------- Add to Cart ----------
   function addToCart(type){
     const ride = rides.find(r=>r.type===type).clone();
-    ride.pickup = document.getElementById(`pickup-${type}`).value;
-    ride.drop = document.getElementById(`drop-${type}`).value;
-    ride.distance = parseFloat(document.getElementById(`dist-${type}`).value) || 1;
-    ride.fare = ride.fare * ride.distance; // simple fare calculation
-    if(!ride.pickup || !ride.drop){ alert("Enter pickup and drop locations!"); return;}
+    ride.pickup=document.getElementById(`pickup-${type}`).value;
+    ride.drop=document.getElementById(`drop-${type}`).value;
+    ride.distance=parseFloat(document.getElementById(`dist-${type}`).value)||1;
+    if(!ride.pickup||!ride.drop){ alert("Enter pickup & drop locations!"); return;}
+    ride.fare*=ride.distance;
     cart.push(ride);
     localStorage.setItem("cart",JSON.stringify(cart));
     alert(`${ride.type} ride booked!`);
   }
 
-  // -------- Render Cart --------
+  // ---------- Render Cart ----------
   function renderCart(){
     const cartDiv=document.getElementById("cartList");
     const cartTotalDiv=document.getElementById("cartTotal");
     cartDiv.innerHTML="";
-    if(cart.length===0){ cartDiv.innerHTML="<p>No rides booked!</p>"; cartTotalDiv.innerHTML=""; return; }
+    if(cart.length===0){ cartDiv.innerHTML="<p>No rides booked!</p>"; cartTotalDiv.innerHTML=""; return;}
     let total=0;
     cart.forEach(r=>{
       total+=r.fare;
@@ -169,11 +170,11 @@
     cartTotalDiv.innerHTML=`Total Fare: ₹${total}`;
   }
 
-  // -------- Place Ride --------
+  // ---------- Confirm Ride ----------
   function placeRide(){
     if(cart.length===0){ alert("No rides in cart!"); return;}
-    const rideOrder = new RideOrder(currentUser||"Guest", cart);
-    lastRide = rideOrder;
+    const rideOrder=new RideOrder(currentUser||"Guest",cart);
+    lastRide=rideOrder;
     localStorage.setItem("lastRide",JSON.stringify(lastRide));
     cart=[];
     localStorage.removeItem("cart");
@@ -181,16 +182,27 @@
     alert("Ride confirmed! Booking ID: "+rideOrder.id);
   }
 
-  // -------- Repeat Last Ride --------
+  // ---------- Repeat Last Ride ----------
   function repeatLastRide(){
-    if(!lastRide){ alert("No last ride to repeat!"); return; }
-    const newRideOrder = new RideOrder(lastRide.customer,lastRide.rides);
-    lastRide = newRideOrder;
+    if(!lastRide){ alert("No last ride to repeat!"); return;}
+    const newRideOrder=new RideOrder(lastRide.customer,lastRide.rides);
+    lastRide=newRideOrder;
     localStorage.setItem("lastRide",JSON.stringify(lastRide));
     alert("Repeated last ride! Booking ID: "+newRideOrder.id);
   }
 
-  // Start Page
+  // ---------- Simple Map (OpenStreetMap) ----------
+  function initMap(){
+    if(document.getElementById('map').innerHTML!="") return;
+    const mapFrame=document.createElement("iframe");
+    mapFrame.src="https://www.openstreetmap.org/export/embed.html?bbox=77.55%2C12.95%2C77.7%2C13.05&layer=mapnik";
+    mapFrame.style.width="100%";
+    mapFrame.style.height="250px";
+    mapFrame.style.border="0";
+    mapFrame.style.borderRadius="12px";
+    document.getElementById('map').appendChild(mapFrame);
+  }
+
   showPage('registerPage');
 </script>
 
