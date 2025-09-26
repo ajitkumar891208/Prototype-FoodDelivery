@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ride-Hailing App - Prototype Pattern</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Roboto', sans-serif; background: #f5f5f5; margin: 0; padding: 0; }
+    header { background: #007bff; color: #fff; padding: 15px; text-align: center; font-size: 26px; font-weight: bold; }
+    nav { background: #333; padding: 10px; text-align: center; }
+    nav button { margin: 0 8px; padding: 8px 14px; color: #fff; background: #007bff; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+    nav button:hover { background: #0056b3; }
+    .page { display: none; padding: 20px; }
+    .card { background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 600px; margin: 20px auto; }
+    input, select { width:95%; padding:10px; margin:10px 0; border-radius:6px; border:1px solid #ddd; font-size:16px; }
+    button.action { background:#007bff; color:#fff; border:none; padding:10px 16px; border-radius:6px; cursor:pointer; font-size:16px; margin-top:5px; }
+    button.action:hover { background:#0056b3; }
+    .ride-list { display:flex; flex-wrap:wrap; justify-content:center; gap:20px; margin-top:20px; }
+    .ride-item { background:#fff; border-radius:12px; padding:15px; width:200px; box-shadow:0 3px 8px rgba(0,0,0,0.08); text-align:center; transition: transform 0.2s; }
+    .ride-item:hover { transform: translateY(-5px); box-shadow:0 6px 15px rgba(0,0,0,0.15); }
+    .ride-item h3 { margin:10px 0 6px; font-size:20px; color:#007bff; }
+    .ride-item p { font-size:16px; margin-bottom:10px; }
+    .cart-item { border-bottom:1px solid #eee; padding:12px 0; font-size:16px; display:flex; justify-content:space-between; }
+    .cart-total { margin-top:15px; font-weight:bold; font-size:18px; text-align:right; }
+    .cart-buttons { display:flex; gap:10px; justify-content:flex-end; margin-top:15px; }
+    .cart-buttons button { flex:1; }
+    @media(max-width:600px){ .ride-list{flex-direction:column; align-items:center;} }
+  </style>
+</head>
+<body>
+
+<header>Ride-Hailing App</header>
+
+<nav>
+  <button onclick="showPage('registerPage')">Register</button>
+  <button onclick="showPage('ridePage')">Available Rides</button>
+  <button onclick="showPage('cartPage')">My Bookings</button>
+</nav>
+
+<!-- Register Page -->
+<div id="registerPage" class="page">
+  <div class="card">
+    <h2>Register User</h2>
+    <form onsubmit="registerUser(event)">
+      <input type="text" id="username" placeholder="Enter username" required><br>
+      <input type="password" id="password" placeholder="Enter password" required><br>
+      <button type="submit" class="action">Register</button>
+    </form>
+    <p style="margin-top:10px;"><b>Default Account:</b> Username = <i>admin</i>, Password = <i>1234</i></p>
+  </div>
+</div>
+
+<!-- Available Rides Page -->
+<div id="ridePage" class="page">
+  <div class="card">
+    <h2>Available Rides</h2>
+    <div class="ride-list" id="rideList"></div>
+  </div>
+</div>
+
+<!-- My Bookings Page -->
+<div id="cartPage" class="page">
+  <div class="card">
+    <h2>My Bookings</h2>
+    <div id="cartList"></div>
+    <div class="cart-total" id="cartTotal"></div>
+    <div class="cart-buttons">
+      <button class="action" onclick="placeRide()">Confirm Booking</button>
+      <button class="action" onclick="repeatLastRide()">Repeat Last Ride</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // -------- Prototype Pattern Classes --------
+  class Ride {
+    constructor(type, fare){ this.type = type; this.fare = fare; }
+    clone(){ return new Ride(this.type, this.fare); }
+  }
+
+  class RideOrder {
+    constructor(customer, rides){
+      this.customer = customer;
+      this.rides = rides.map(r => r.clone());
+      this.id = "ride-" + Date.now();
+    }
+    clone(){ return new RideOrder(this.customer, this.rides); }
+  }
+
+  // -------- State --------
+  const ridePrototype = new Ride("Standard", 100);
+  const rides = [
+    (()=>{let r=ridePrototype.clone(); r.type="Mini"; r.fare=100; return r;})(),
+    (()=>{let r=ridePrototype.clone(); r.type="Sedan"; r.fare=200; return r;})(),
+    (()=>{let r=ridePrototype.clone(); r.type="SUV"; r.fare=350; return r;})(),
+    (()=>{let r=ridePrototype.clone(); r.type="Luxury"; r.fare=500; return r;})()
+  ];
+
+  let cart = JSON.parse(localStorage.getItem("cart")) || [];
+  let lastRide = JSON.parse(localStorage.getItem("lastRide")) || null;
+  let users = JSON.parse(localStorage.getItem("users")) || [{username:"admin", password:"1234"}];
+  let currentUser = null;
+
+  // -------- Page Switch --------
+  function showPage(pageId){
+    document.querySelectorAll(".page").forEach(p => p.style.display="none");
+    document.getElementById(pageId).style.display="block";
+    if(pageId==="ridePage") renderRides();
+    if(pageId==="cartPage") renderCart();
+  }
+
+  // -------- User Registration --------
+  function registerUser(e){
+    e.preventDefault();
+    const uname=document.getElementById("username").value;
+    const pwd=document.getElementById("password").value;
+    users.push({username:uname, password:pwd});
+    localStorage.setItem("users", JSON.stringify(users));
+    currentUser = uname;
+    alert("User registered successfully! Logged in as "+uname);
+    showPage('ridePage');
+  }
+
+  // -------- Render Rides --------
+  function renderRides(){
+    const rideListDiv = document.getElementById("rideList");
+    rideListDiv.innerHTML = "";
+    rides.forEach(r=>{
+      let div=document.createElement("div");
+      div.className="ride-item";
+      div.innerHTML = `<h3>${r.type}</h3><p>Fare: ₹${r.fare}</p>
+        <button class="action" onclick='addToCart("${r.type}", ${r.fare})'>Book Ride</button>`;
+      rideListDiv.appendChild(div);
+    });
+  }
+
+  function addToCart(type, fare){
+    let ride = rides.find(r=>r.type===type).clone();
+    cart.push(ride);
+    localStorage.setItem("cart", JSON.stringify(cart));
+    alert(type + " ride added to cart!");
+  }
+
+  // -------- Render Cart --------
+  function renderCart(){
+    const cartDiv = document.getElementById("cartList");
+    const cartTotalDiv = document.getElementById("cartTotal");
+    cartDiv.innerHTML = "";
+    if(cart.length===0){
+      cartDiv.innerHTML="<p>No rides booked yet!</p>"; 
+      cartTotalDiv.innerHTML="";
+      return;
+    }
+    let total = 0;
+    cart.forEach(r=>{
+      total += r.fare;
+      let div = document.createElement("div");
+      div.className="cart-item";
+      div.textContent=`${r.type} - ₹${r.fare}`;
+      cartDiv.appendChild(div);
+    });
+    cartTotalDiv.innerHTML = `Total Fare: ₹${total}`;
+  }
+
+  // -------- Confirm Ride Booking --------
+  function placeRide(){
+    if(cart.length===0){ alert("No rides in cart!"); return; }
+    let rideOrder = new RideOrder(currentUser||"Guest", cart);
+    lastRide = rideOrder;
+    localStorage.setItem("lastRide", JSON.stringify(lastRide));
+    cart = [];
+    localStorage.removeItem("cart");
+    renderCart();
+    alert("Ride confirmed! Booking ID: "+rideOrder.id);
+  }
+
+  // -------- Repeat Last Ride --------
+  function repeatLastRide(){
+    if(!lastRide){ alert("No last ride to repeat!"); return; }
+    let newRideOrder = new RideOrder(lastRide.customer, lastRide.rides);
+    lastRide = newRideOrder;
+    localStorage.setItem("lastRide", JSON.stringify(lastRide));
+    alert("Repeated last ride! Booking ID: "+newRideOrder.id);
+  }
+
+  // Start on Register Page
+  showPage('registerPage');
+</script>
+
+</body>
+</html>
